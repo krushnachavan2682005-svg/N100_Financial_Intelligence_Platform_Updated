@@ -133,6 +133,11 @@ CREATE TABLE IF NOT EXISTS financial_ratios (
     price_to_earnings REAL,
     price_to_book REAL,
     dividend_yield_pct REAL,
+    sales_cagr_3y REAL,
+    sales_cagr_5y REAL,
+    free_cash_flow REAL,
+    fcf_to_net_profit REAL,
+    cfo_to_operating_profit REAL,
     source_name TEXT,
     PRIMARY KEY (company_id, year),
     FOREIGN KEY (company_id) REFERENCES companies(company_id)

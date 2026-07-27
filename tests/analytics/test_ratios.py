@@ -4,6 +4,9 @@ import pytest
 
 from src.analytics.ratios import (
     asset_turnover,
+    current_ratio,
+    debt_to_equity,
+    interest_coverage,
     net_profit_margin,
     operating_profit_margin,
     return_on_capital_employed,
@@ -51,3 +54,37 @@ def test_ratios_return_none_for_missing_or_non_finite_metrics(missing_value):
 def test_ratios_preserve_negative_profit_values():
     assert net_profit_margin(-50, 1_000) == -5.0
     assert return_on_equity(-75, 500) == -15.0
+
+
+@pytest.mark.parametrize(
+    ("function", "numerator", "denominator", "expected"),
+    [
+        (debt_to_equity, 300, 600, 0.5),
+        (interest_coverage, 450, 90, 5.0),
+        (current_ratio, 1_200, 800, 1.5),
+    ],
+)
+def test_solvency_and_liquidity_ratios_calculate_expected_values(function, numerator, denominator, expected):
+    assert function(numerator, denominator) == expected
+
+
+def test_debt_to_equity_reports_high_leverage():
+    assert debt_to_equity(2_000, 500) == 4.0
+
+
+@pytest.mark.parametrize(
+    ("function", "numerator"),
+    [
+        (debt_to_equity, 300),
+        (interest_coverage, 450),
+        (current_ratio, 1_200),
+    ],
+)
+def test_solvency_and_liquidity_ratios_return_none_for_zero_denominator(function, numerator):
+    assert function(numerator, 0) is None
+
+
+@pytest.mark.parametrize("function", [debt_to_equity, interest_coverage, current_ratio])
+def test_solvency_and_liquidity_ratios_return_none_for_missing_metrics(function):
+    assert function(None, 100) is None
+    assert function(100, None) is None

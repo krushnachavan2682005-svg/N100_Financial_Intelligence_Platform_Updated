@@ -1,4 +1,4 @@
-"""Core profitability and efficiency ratio calculations."""
+"""Core profitability, efficiency, solvency, and liquidity calculations."""
 
 from __future__ import annotations
 
@@ -57,9 +57,27 @@ def asset_turnover(sales: Any, total_assets: Any) -> float | None:
     return _safe_ratio(sales, total_assets, percentage=False)
 
 
+def debt_to_equity(total_debt: Any, net_worth: Any) -> float | None:
+    """Calculate D/E: total debt divided by shareholder net worth (times, not percent)."""
+    return _safe_ratio(total_debt, net_worth, percentage=False)
+
+
+def interest_coverage(ebit: Any, interest_expense: Any) -> float | None:
+    """Calculate interest coverage: EBIT divided by interest expense (times)."""
+    return _safe_ratio(ebit, interest_expense, percentage=False)
+
+
+def current_ratio(current_assets: Any, current_liabilities: Any) -> float | None:
+    """Calculate current ratio: current assets divided by current liabilities (times)."""
+    return _safe_ratio(current_assets, current_liabilities, percentage=False)
+
+
 # Concise aliases support analytics notebooks while retaining descriptive APIs.
 calculate_opm = operating_profit_margin
 calculate_npm = net_profit_margin
 calculate_roe = return_on_equity
 calculate_roce = return_on_capital_employed
 calculate_asset_turnover = asset_turnover
+calculate_debt_to_equity = debt_to_equity
+calculate_interest_coverage = interest_coverage
+calculate_current_ratio = current_ratio
