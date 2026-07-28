@@ -333,6 +333,10 @@ def _ensure_ratio_columns(connection: sqlite3.Connection) -> None:
 
 def load_financial_ratios(db_path: str | Path = "nifty100.db") -> int:
     """Calculate and upsert annual ratios into ``financial_ratios`` in one transaction."""
+    # Ensure audit log directory and file always exist
+    RATIO_EDGE_CASES_LOG.parent.mkdir(parents=True, exist_ok=True)
+    RATIO_EDGE_CASES_LOG.touch(exist_ok=True)
+
     connection = sqlite3.connect(db_path)
     try:
         connection.execute("PRAGMA foreign_keys = ON")
@@ -374,28 +378,3 @@ def load_financial_ratios(db_path: str | Path = "nifty100.db") -> int:
         return len(records)
     finally:
         connection.close()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    db_path = PROJECT_ROOT / "nifty100.db"
-    rows_loaded = load_financial_ratios(db_path)
-    connection = sqlite3.connect(db_path)
-    try:
-        screener = run_screener_verification(connection)
-    finally:
-        connection.close()
-    edge_case_lines = [
-        line
-        for line in RATIO_EDGE_CASES_LOG.read_text(encoding="utf-8").splitlines()
-        if line and not line.startswith("#") and not line.startswith("company_id")
-    ]
-    capital_rows = sum(1 for _ in CAPITAL_ALLOCATION_CSV.open(encoding="utf-8")) - 1
-    print(f"Loaded or updated {rows_loaded} financial_ratios records.")
-    print(f"Wrote {capital_rows} capital allocation rows to {CAPITAL_ALLOCATION_CSV}.")
-    print(f"Logged {len(edge_case_lines)} ratio edge cases to {RATIO_EDGE_CASES_LOG}.")
-    print(
-        "Screener verification (ROE > 15%, D/E < 1): "
-        f"{screener['total_matches']} total matches, "
-        f"{screener['latest_year_matches']} in latest year {screener['latest_year']}."
-    )
