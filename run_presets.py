@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 from src.screener.engine import filter_stocks, load_presets
+from src.screener.exporter import export_screener_results
 
 def main():
     conn = sqlite3.connect('nifty100.db')
@@ -37,11 +38,19 @@ def main():
     presets = load_presets()
     print(f"Total companies evaluated: {len(df)}")
     
+    results = {}
+    criteria_dict = {}
     for key, preset in presets.items():
         name = preset['name']
         criteria = preset['criteria']
         filtered = filter_stocks(df, criteria)
+        results[name] = filtered
+        criteria_dict[name] = criteria
         print(f"Preset: {name} -> {len(filtered)} matches")
+
+    output_path = 'output/screener_output.xlsx'
+    export_screener_results(results, output_path, criteria_dict)
+    print(f"Exported to {output_path}")
 
 if __name__ == '__main__':
     main()
