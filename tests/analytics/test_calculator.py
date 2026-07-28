@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from src.analytics.calculator import calculate_financial_ratio_records, load_financial_ratios
+from src.analytics.calculator import (
+    calculate_financial_ratio_records,
+    load_financial_ratios,
+    run_screener_verification,
+    write_ratio_edge_cases_log,
+    _is_financial_sector,
+)
 from src.analytics.cagr import calculate_cagr
 
 
@@ -87,3 +93,95 @@ def test_load_financial_ratios_upserts_calculated_records(tmp_path):
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
     finally:
         connection.close()
+
+
+def test_sales_cagr_flags_are_stored_for_insufficient_history(tmp_path):
+    database_path = tmp_path / "ratios.db"
+    _seed_database(database_path)
+    connection = sqlite3.connect(database_path)
+    try:
+        records = calculate_financial_ratio_records(connection)
+    finally:
+        connection.close()
+
+    earliest = next(record for record in records if record["year"] == 2018)
+    assert earliest["sales_cagr_3y"] is None
+    assert earliest["sales_cagr_3y_flag"] == "INSUFFICIENT"
+    assert earliest["sales_cagr_5y_flag"] == "INSUFFICIENT"
+
+
+@pytest.mark.parametrize(
+    ("sector", "expected"),
+    [
+        ("Banks", True),
+        ("Finance", True),
+        ("NBFC - Housing", True),
+        ("IT - Software", False),
+        (None, False),
+    ],
+)
+def test_financial_sector_carve_out(sector, expected):
+    assert _is_financial_sector(sector) is expected
+
+
+def test_write_ratio_edge_cases_log_flags_large_roe_differences(tmp_path):
+    records = [
+        {
+            "company_id": "C001",
+            "year": 2023,
+            "return_on_equity_pct": 20.0,
+            "return_on_capital_employed_pct": 10.0,
+            "_audit_context": {
+                "source_ratio_roe": 10.0,
+                "source_ratio_roce": None,
+                "source_roe_pct": None,
+                "source_roce_pct": None,
+            },
+        }
+    ]
+    log_path = tmp_path / "ratio_edge_cases.log"
+    count = write_ratio_edge_cases_log(records, log_path)
+    contents = log_path.read_text(encoding="utf-8")
+    assert count == 1
+    assert "C001,2023,ROE,20.0000,10.0000,source_ratios.roe_pct,10.0000" in contents
+
+
+def test_load_financial_ratios_writes_audit_deliverables(tmp_path):
+    database_path = tmp_path / "ratios.db"
+    _seed_database(database_path)
+    output_dir = tmp_path / "output"
+    capital_path = output_dir / "capital_allocation.csv"
+    edge_log_path = output_dir / "ratio_edge_cases.log"
+
+    import src.analytics.calculator as calculator_module
+
+    original_output_dir = calculator_module.OUTPUT_DIR
+    original_capital_path = calculator_module.CAPITAL_ALLOCATION_CSV
+    original_edge_log_path = calculator_module.RATIO_EDGE_CASES_LOG
+    calculator_module.OUTPUT_DIR = output_dir
+    calculator_module.CAPITAL_ALLOCATION_CSV = capital_path
+    calculator_module.RATIO_EDGE_CASES_LOG = edge_log_path
+    try:
+        assert load_financial_ratios(database_path) == 6
+        assert capital_path.exists()
+        assert edge_log_path.exists()
+        assert "company_id,year,cfo_sign,cfi_sign,cff_sign,pattern_label" in capital_path.read_text(
+            encoding="utf-8"
+        )
+    finally:
+        calculator_module.OUTPUT_DIR = original_output_dir
+        calculator_module.CAPITAL_ALLOCATION_CSV = original_capital_path
+        calculator_module.RATIO_EDGE_CASES_LOG = original_edge_log_path
+
+
+def test_run_screener_verification(tmp_path):
+    database_path = tmp_path / "ratios.db"
+    _seed_database(database_path)
+    load_financial_ratios(database_path)
+    connection = sqlite3.connect(database_path)
+    try:
+        result = run_screener_verification(connection)
+    finally:
+        connection.close()
+    assert result["total_matches"] >= 1
+    assert result["latest_year_matches"] >= 1

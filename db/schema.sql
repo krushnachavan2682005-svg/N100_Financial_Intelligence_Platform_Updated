@@ -135,6 +135,8 @@ CREATE TABLE IF NOT EXISTS financial_ratios (
     dividend_yield_pct REAL,
     sales_cagr_3y REAL,
     sales_cagr_5y REAL,
+    sales_cagr_3y_flag TEXT,
+    sales_cagr_5y_flag TEXT,
     free_cash_flow REAL,
     fcf_to_net_profit REAL,
     cfo_to_operating_profit REAL,
