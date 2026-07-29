@@ -17,44 +17,41 @@ def get_companies() -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_ratios(ticker: str = None, year: int = None) -> pd.DataFrame:
-    query = "SELECT * FROM financial_ratios WHERE 1=1"
+    query = "SELECT f.*, c.nse as ticker FROM financial_ratios f JOIN companies c ON f.company_id = c.company_id WHERE 1=1"
     params = []
     if ticker:
-        query += " AND ticker = ?"
+        query += " AND c.nse = ?"
         params.append(ticker)
     if year:
-        query += " AND year = ?"
+        query += " AND f.year = ?"
         params.append(year)
     return _run_query(query, tuple(params))
 
 @st.cache_data(ttl=600)
 def get_pl(ticker: str) -> pd.DataFrame:
-    return _run_query("SELECT * FROM pl WHERE ticker = ?", (ticker,))
+    return _run_query("SELECT p.*, c.nse as ticker FROM profitandloss p JOIN companies c ON p.company_id = c.company_id WHERE c.nse = ?", (ticker,))
 
 @st.cache_data(ttl=600)
 def get_bs(ticker: str) -> pd.DataFrame:
-    return _run_query("SELECT * FROM bs WHERE ticker = ?", (ticker,))
+    return _run_query("SELECT b.*, c.nse as ticker FROM balancesheet b JOIN companies c ON b.company_id = c.company_id WHERE c.nse = ?", (ticker,))
 
 @st.cache_data(ttl=600)
 def get_cf(ticker: str) -> pd.DataFrame:
-    return _run_query("SELECT * FROM cf WHERE ticker = ?", (ticker,))
+    return _run_query("SELECT f.*, c.nse as ticker FROM cashflow f JOIN companies c ON f.company_id = c.company_id WHERE c.nse = ?", (ticker,))
 
 @st.cache_data(ttl=600)
 def get_sectors() -> pd.DataFrame:
-    # Assuming 'sector' column in 'companies' table
     return _run_query("SELECT DISTINCT sector FROM companies WHERE sector IS NOT NULL")
 
 @st.cache_data(ttl=600)
 def get_peers(group_name: str) -> pd.DataFrame:
-    # Assuming group_name corresponds to 'sector' or 'industry'
-    return _run_query("SELECT * FROM companies WHERE sector = ? OR industry = ?", (group_name, group_name))
+    return _run_query("SELECT * FROM companies WHERE sector = ?", (group_name,))
 
 @st.cache_data(ttl=600)
 def get_valuation(ticker: str) -> pd.DataFrame:
-    # Placeholder querying financial_ratios for valuation metrics if a specific table doesn't exist
-    query = "SELECT ticker, year, pe_ratio, pb_ratio, ev_ebitda FROM financial_ratios WHERE ticker = ?"
-    try:
-        return _run_query(query, (ticker,))
-    except Exception:
-        # Fallback if specific columns are missing
-        return pd.DataFrame()
+    query = "SELECT f.year, f.price_to_earnings as pe_ratio, f.price_to_book as pb_ratio FROM financial_ratios f JOIN companies c ON f.company_id = c.company_id WHERE c.nse = ?"
+    return _run_query(query, (ticker,))
+
+@st.cache_data(ttl=600)
+def get_company(ticker: str) -> pd.DataFrame:
+    return _run_query("SELECT * FROM companies WHERE nse = ?", (ticker,))

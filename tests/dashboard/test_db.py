@@ -32,27 +32,27 @@ def test_get_companies(mock_run_query):
 def test_get_ratios(mock_run_query):
     df = db.get_ratios(ticker="TCS", year=2023)
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT * FROM financial_ratios WHERE 1=1 AND ticker = ? AND year = ?", ("TCS", 2023))
+    mock_run_query.assert_called_with("SELECT f.*, c.nse as ticker FROM financial_ratios f JOIN companies c ON f.company_id = c.company_id WHERE 1=1 AND c.nse = ? AND f.year = ?", ("TCS", 2023))
 
 def test_get_ratios_no_params(mock_run_query):
     df = db.get_ratios()
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT * FROM financial_ratios WHERE 1=1", ())
+    mock_run_query.assert_called_with("SELECT f.*, c.nse as ticker FROM financial_ratios f JOIN companies c ON f.company_id = c.company_id WHERE 1=1", ())
 
 def test_get_pl(mock_run_query):
     df = db.get_pl("TCS")
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT * FROM pl WHERE ticker = ?", ("TCS",))
+    mock_run_query.assert_called_with("SELECT p.*, c.nse as ticker FROM profitandloss p JOIN companies c ON p.company_id = c.company_id WHERE c.nse = ?", ("TCS",))
 
 def test_get_bs(mock_run_query):
     df = db.get_bs("TCS")
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT * FROM bs WHERE ticker = ?", ("TCS",))
+    mock_run_query.assert_called_with("SELECT b.*, c.nse as ticker FROM balancesheet b JOIN companies c ON b.company_id = c.company_id WHERE c.nse = ?", ("TCS",))
 
 def test_get_cf(mock_run_query):
     df = db.get_cf("TCS")
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT * FROM cf WHERE ticker = ?", ("TCS",))
+    mock_run_query.assert_called_with("SELECT f.*, c.nse as ticker FROM cashflow f JOIN companies c ON f.company_id = c.company_id WHERE c.nse = ?", ("TCS",))
 
 def test_get_sectors(mock_run_query):
     df = db.get_sectors()
@@ -62,9 +62,14 @@ def test_get_sectors(mock_run_query):
 def test_get_peers(mock_run_query):
     df = db.get_peers("IT")
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT * FROM companies WHERE sector = ? OR industry = ?", ("IT", "IT"))
+    mock_run_query.assert_called_with("SELECT * FROM companies WHERE sector = ?", ("IT",))
 
 def test_get_valuation(mock_run_query):
     df = db.get_valuation("TCS")
     assert isinstance(df, pd.DataFrame)
-    mock_run_query.assert_called_with("SELECT ticker, year, pe_ratio, pb_ratio, ev_ebitda FROM financial_ratios WHERE ticker = ?", ("TCS",))
+    mock_run_query.assert_called_with("SELECT f.year, f.price_to_earnings as pe_ratio, f.price_to_book as pb_ratio FROM financial_ratios f JOIN companies c ON f.company_id = c.company_id WHERE c.nse = ?", ("TCS",))
+
+def test_get_company(mock_run_query):
+    df = db.get_company("TCS")
+    assert isinstance(df, pd.DataFrame)
+    mock_run_query.assert_called_with("SELECT * FROM companies WHERE nse = ?", ("TCS",))
