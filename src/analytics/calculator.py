@@ -24,7 +24,6 @@ from src.analytics.ratios import (
     return_on_equity,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = PROJECT_ROOT / "db" / "schema.sql"
 OUTPUT_DIR = PROJECT_ROOT / "output"
@@ -150,15 +149,16 @@ def _maybe_warn_high_leverage(
     )
 
 
-def calculate_financial_ratio_records(connection: sqlite3.Connection) -> list[dict[str, Any]]:
+def calculate_financial_ratio_records(
+    connection: sqlite3.Connection,
+) -> list[dict[str, Any]]:
     """Return one calculated financial-ratios record for every complete company-year.
 
     The surrogate balance sheet does not expose current assets/liabilities, so
     ``current_ratio`` is left ``None``. Operating profit is used as the available
     EBIT proxy, and investing cash flow is a Capex proxy for the surrogate data.
     """
-    rows = connection.execute(
-        """
+    rows = connection.execute("""
         SELECT p.company_id, p.year, p.sales, p.operating_profit, p.interest,
                p.net_profit, p.eps,
                b.equity_capital, b.reserves, b.borrowings, b.other_liabilities,
@@ -173,8 +173,7 @@ def calculate_financial_ratio_records(connection: sqlite3.Connection) -> list[di
         LEFT JOIN source_ratios AS sr
             ON sr.company_id = p.company_id AND sr.year = p.year
         ORDER BY p.company_id, p.year
-        """
-    ).fetchall()
+        """).fetchall()
 
     sales_history: dict[str, dict[int, Any]] = {}
     for row in rows:
@@ -183,10 +182,25 @@ def calculate_financial_ratio_records(connection: sqlite3.Connection) -> list[di
     records: list[dict[str, Any]] = []
     for row in rows:
         (
-            company_id, year, sales, operating_profit, interest, net_profit, eps,
-            equity_capital, reserves, borrowings,
-            other_liabilities, total_assets, cfo, investing_cash_flow,
-            sector, source_roe_pct, source_roce_pct, source_ratio_roe, source_ratio_roce,
+            company_id,
+            year,
+            sales,
+            operating_profit,
+            interest,
+            net_profit,
+            eps,
+            equity_capital,
+            reserves,
+            borrowings,
+            other_liabilities,
+            total_assets,
+            cfo,
+            investing_cash_flow,
+            sector,
+            source_roe_pct,
+            source_roce_pct,
+            source_ratio_roe,
+            source_ratio_roce,
         ) = row
         net_worth = _net_worth(equity_capital, reserves)
         capital_employed = _capital_employed(total_assets, other_liabilities)
@@ -234,7 +248,9 @@ def calculate_financial_ratio_records(connection: sqlite3.Connection) -> list[di
                 "sales_cagr_5y_flag": sales_cagr_5y_flag,
                 "free_cash_flow": fcf,
                 "fcf_to_net_profit": fcf_to_net_profit(fcf, net_profit),
-                "cfo_to_operating_profit": cfo_to_operating_profit(cfo, operating_profit),
+                "cfo_to_operating_profit": cfo_to_operating_profit(
+                    cfo, operating_profit
+                ),
                 "source_name": "calculated_from_financial_statements",
                 "_audit_context": {
                     "source_ratio_roe": source_ratio_roe,
@@ -261,10 +277,26 @@ def write_ratio_edge_cases_log(
         computed_roce = record["return_on_capital_employed_pct"]
 
         comparisons = (
-            ("ROE", computed_roe, ("source_ratios.roe_pct", audit_context.get("source_ratio_roe"))),
-            ("ROE", computed_roe, ("companies.source_roe_pct", audit_context.get("source_roe_pct"))),
-            ("ROCE", computed_roce, ("source_ratios.roce_pct", audit_context.get("source_ratio_roce"))),
-            ("ROCE", computed_roce, ("companies.source_roce_pct", audit_context.get("source_roce_pct"))),
+            (
+                "ROE",
+                computed_roe,
+                ("source_ratios.roe_pct", audit_context.get("source_ratio_roe")),
+            ),
+            (
+                "ROE",
+                computed_roe,
+                ("companies.source_roe_pct", audit_context.get("source_roe_pct")),
+            ),
+            (
+                "ROCE",
+                computed_roce,
+                ("source_ratios.roce_pct", audit_context.get("source_ratio_roce")),
+            ),
+            (
+                "ROCE",
+                computed_roce,
+                ("companies.source_roce_pct", audit_context.get("source_roce_pct")),
+            ),
         )
         for metric, computed_value, (source_column, source_value) in comparisons:
             if computed_value is None or source_value is None:
@@ -311,7 +343,9 @@ def run_screener_verification(
         """,
         (min_roe_pct, max_debt_to_equity),
     ).fetchall()
-    latest_year = connection.execute("SELECT MAX(year) FROM financial_ratios").fetchone()[0]
+    latest_year = connection.execute(
+        "SELECT MAX(year) FROM financial_ratios"
+    ).fetchone()[0]
     latest_matches = [row for row in rows if row[3] == latest_year]
     return {
         "min_roe_pct": min_roe_pct,
@@ -325,10 +359,14 @@ def run_screener_verification(
 
 def _ensure_ratio_columns(connection: sqlite3.Connection) -> None:
     """Add Day-12 derived-metric columns when loading into an existing database."""
-    present_columns = {row[1] for row in connection.execute("PRAGMA table_info(financial_ratios)")}
+    present_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(financial_ratios)")
+    }
     for column, data_type in _RATIO_MIGRATIONS.items():
         if column not in present_columns:
-            connection.execute(f'ALTER TABLE financial_ratios ADD COLUMN "{column}" {data_type}')
+            connection.execute(
+                f'ALTER TABLE financial_ratios ADD COLUMN "{column}" {data_type}'
+            )
 
 
 def load_financial_ratios(db_path: str | Path = "nifty100.db") -> int:
@@ -360,7 +398,10 @@ def load_financial_ratios(db_path: str | Path = "nifty100.db") -> int:
             )
             connection.executemany(
                 statement,
-                [tuple(record[column] for column in RATIO_COLUMNS) for record in records],
+                [
+                    tuple(record[column] for column in RATIO_COLUMNS)
+                    for record in records
+                ],
             )
 
         write_ratio_edge_cases_log(records)

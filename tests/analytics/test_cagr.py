@@ -55,11 +55,15 @@ def test_calculate_cagr_from_annual_series_uses_observation_span():
 
 
 def test_calculate_cagr_from_series_accepts_an_explicit_period():
-    assert calculate_cagr_from_series([100, 161.051], num_years=5) == pytest.approx(0.10)
+    assert calculate_cagr_from_series([100, 161.051], num_years=5) == pytest.approx(
+        0.10
+    )
 
 
 @pytest.mark.parametrize("values", [None, [], [100], [100, 0]])
-def test_calculate_cagr_from_series_returns_none_for_insufficient_or_invalid_values(values):
+def test_calculate_cagr_from_series_returns_none_for_insufficient_or_invalid_values(
+    values,
+):
     assert calculate_cagr_from_series(values) is None
 
 

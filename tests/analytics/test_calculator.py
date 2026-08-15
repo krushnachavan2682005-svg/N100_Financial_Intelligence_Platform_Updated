@@ -12,7 +12,6 @@ from src.analytics.calculator import (
 )
 from src.analytics.cagr import calculate_cagr
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = PROJECT_ROOT / "db" / "schema.sql"
 
@@ -83,7 +82,10 @@ def test_load_financial_ratios_upserts_calculated_records(tmp_path):
 
     connection = sqlite3.connect(database_path)
     try:
-        assert connection.execute("SELECT COUNT(*) FROM financial_ratios").fetchone()[0] == 6
+        assert (
+            connection.execute("SELECT COUNT(*) FROM financial_ratios").fetchone()[0]
+            == 6
+        )
         latest = connection.execute(
             "SELECT sales_cagr_5y, free_cash_flow FROM financial_ratios WHERE company_id = ? AND year = ?",
             ("C001", 2023),
@@ -165,8 +167,9 @@ def test_load_financial_ratios_writes_audit_deliverables(tmp_path):
         assert load_financial_ratios(database_path) == 6
         assert capital_path.exists()
         assert edge_log_path.exists()
-        assert "company_id,year,cfo_sign,cfi_sign,cff_sign,pattern_label" in capital_path.read_text(
-            encoding="utf-8"
+        assert (
+            "company_id,year,cfo_sign,cfi_sign,cff_sign,pattern_label"
+            in capital_path.read_text(encoding="utf-8")
         )
     finally:
         calculator_module.OUTPUT_DIR = original_output_dir

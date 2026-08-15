@@ -12,7 +12,6 @@ from typing import Mapping
 import numpy as np
 import pandas as pd
 
-
 FAILURE_COLUMNS = [
     "rule_id",
     "severity",
@@ -57,9 +56,19 @@ class DataValidator:
         output_path: str | Path | None = None,
     ) -> None:
         project_root = Path(__file__).resolve().parents[2]
-        self.data_dir = Path(data_dir) if data_dir else project_root / "data/raw/n100_kaggle_top92_clean/standardized_tables"
-        self.output_path = Path(output_path) if output_path else project_root / "output/validation_failures.csv"
-        self.tables = {name: frame.copy() for name, frame in tables.items()} if tables else {}
+        self.data_dir = (
+            Path(data_dir)
+            if data_dir
+            else project_root / "data/raw/n100_kaggle_top92_clean/standardized_tables"
+        )
+        self.output_path = (
+            Path(output_path)
+            if output_path
+            else project_root / "output/validation_failures.csv"
+        )
+        self.tables = (
+            {name: frame.copy() for name, frame in tables.items()} if tables else {}
+        )
         self._failures: list[dict[str, object]] = []
 
     def load_data(self) -> dict[str, pd.DataFrame]:
@@ -71,7 +80,9 @@ class DataValidator:
         for table_name, filename in SOURCE_FILENAMES.items():
             file_path = self.data_dir / filename
             if not file_path.is_file():
-                raise FileNotFoundError(f"Required standardized file not found: {file_path}")
+                raise FileNotFoundError(
+                    f"Required standardized file not found: {file_path}"
+                )
             self.tables[table_name] = pd.read_csv(file_path)
         return self.tables
 
@@ -107,7 +118,15 @@ class DataValidator:
         self._require_columns("companies", {"company_id"})
         duplicates = companies[companies.duplicated("company_id", keep=False)]
         for _, row in duplicates.iterrows():
-            self._add_failure("DQ-01", "CRITICAL", "companies", row["company_id"], None, "company_id", "Duplicate company_id in companies table.")
+            self._add_failure(
+                "DQ-01",
+                "CRITICAL",
+                "companies",
+                row["company_id"],
+                None,
+                "company_id",
+                "Duplicate company_id in companies table.",
+            )
 
     def check_dq02_composite_key_uniqueness(self) -> None:
         """DQ-02 CRITICAL: annual records must be unique by company and year."""
@@ -116,7 +135,15 @@ class DataValidator:
             self._require_columns(table_name, {"company_id", "year"})
             duplicates = table[table.duplicated(["company_id", "year"], keep=False)]
             for _, row in duplicates.iterrows():
-                self._add_failure("DQ-02", "CRITICAL", table_name, row["company_id"], row["year"], "company_id,year", "Duplicate (company_id, year) composite key.")
+                self._add_failure(
+                    "DQ-02",
+                    "CRITICAL",
+                    table_name,
+                    row["company_id"],
+                    row["year"],
+                    "company_id,year",
+                    "Duplicate (company_id, year) composite key.",
+                )
 
     def check_dq03_foreign_key_integrity(self) -> None:
         """DQ-03 CRITICAL: annual company IDs must be present in companies."""
@@ -128,26 +155,59 @@ class DataValidator:
             self._require_columns(table_name, {"company_id", "year"})
             orphans = table[~table["company_id"].isin(valid_ids)]
             for _, row in orphans.iterrows():
-                self._add_failure("DQ-03", "CRITICAL", table_name, row["company_id"], row["year"], "company_id", "company_id is absent from companies table.")
+                self._add_failure(
+                    "DQ-03",
+                    "CRITICAL",
+                    table_name,
+                    row["company_id"],
+                    row["year"],
+                    "company_id",
+                    "company_id is absent from companies table.",
+                )
 
     def check_dq04_bs_balance(self) -> None:
         """DQ-04 WARNING: balance-sheet totals must agree exactly."""
         table = self.tables["balancesheet"]
-        self._require_columns("balancesheet", {"company_id", "year", "total_assets", "total_liabilities"})
+        self._require_columns(
+            "balancesheet", {"company_id", "year", "total_assets", "total_liabilities"}
+        )
         invalid = table[table["total_assets"] != table["total_liabilities"]]
         for _, row in invalid.iterrows():
             difference = row["total_assets"] - row["total_liabilities"]
-            self._add_failure("DQ-04", "WARNING", "balancesheet", row["company_id"], row["year"], "total_assets,total_liabilities", f"Balance sheet does not balance; assets minus liabilities = {difference}.")
+            self._add_failure(
+                "DQ-04",
+                "WARNING",
+                "balancesheet",
+                row["company_id"],
+                row["year"],
+                "total_assets,total_liabilities",
+                f"Balance sheet does not balance; assets minus liabilities = {difference}.",
+            )
 
     def check_dq05_opm_cross_check(self, tolerance: float = 0.6) -> None:
         """DQ-05 WARNING: OPM must agree within the source-rounding tolerance."""
         table = self.tables["profitandloss"]
-        self._require_columns("profitandloss", {"company_id", "year", "sales", "operating_profit", "opm_pct"})
+        self._require_columns(
+            "profitandloss",
+            {"company_id", "year", "sales", "operating_profit", "opm_pct"},
+        )
         eligible = table[table["sales"].notna() & (table["sales"] != 0)].copy()
-        eligible["calculated_opm"] = eligible["operating_profit"] / eligible["sales"] * 100
-        invalid = eligible[(eligible["opm_pct"] - eligible["calculated_opm"]).abs() > tolerance]
+        eligible["calculated_opm"] = (
+            eligible["operating_profit"] / eligible["sales"] * 100
+        )
+        invalid = eligible[
+            (eligible["opm_pct"] - eligible["calculated_opm"]).abs() > tolerance
+        ]
         for _, row in invalid.iterrows():
-            self._add_failure("DQ-05", "WARNING", "profitandloss", row["company_id"], row["year"], "opm_pct", f"Reported OPM {row['opm_pct']:.4f}% differs from calculated OPM {row['calculated_opm']:.4f}% by more than {tolerance:.1f} percentage points.")
+            self._add_failure(
+                "DQ-05",
+                "WARNING",
+                "profitandloss",
+                row["company_id"],
+                row["year"],
+                "opm_pct",
+                f"Reported OPM {row['opm_pct']:.4f}% differs from calculated OPM {row['calculated_opm']:.4f}% by more than {tolerance:.1f} percentage points.",
+            )
 
     def check_dq06_positive_sales(self) -> None:
         """DQ-06 WARNING: sales must be strictly positive."""
@@ -155,27 +215,64 @@ class DataValidator:
         self._require_columns("profitandloss", {"company_id", "year", "sales"})
         invalid = table[table["sales"].notna() & (table["sales"] <= 0)]
         for _, row in invalid.iterrows():
-            self._add_failure("DQ-06", "WARNING", "profitandloss", row["company_id"], row["year"], "sales", f"Sales must be positive; found {row['sales']}.")
+            self._add_failure(
+                "DQ-06",
+                "WARNING",
+                "profitandloss",
+                row["company_id"],
+                row["year"],
+                "sales",
+                f"Sales must be positive; found {row['sales']}.",
+            )
 
     def check_dq07_net_cash_reconciliation(self, tolerance: float = 1.0) -> None:
         """DQ-07 WARNING: cash-flow components must reconcile within ±1 crore."""
         table = self.tables["cashflow"]
-        required = {"company_id", "year", "cash_from_operating_activity", "cash_from_investing_activity", "cash_from_financing_activity", "net_cash_flow"}
+        required = {
+            "company_id",
+            "year",
+            "cash_from_operating_activity",
+            "cash_from_investing_activity",
+            "cash_from_financing_activity",
+            "net_cash_flow",
+        }
         self._require_columns("cashflow", required)
-        calculated = table["cash_from_operating_activity"] + table["cash_from_investing_activity"] + table["cash_from_financing_activity"]
+        calculated = (
+            table["cash_from_operating_activity"]
+            + table["cash_from_investing_activity"]
+            + table["cash_from_financing_activity"]
+        )
         invalid = table[(calculated - table["net_cash_flow"]).abs() > tolerance].copy()
         invalid["difference"] = calculated.loc[invalid.index] - invalid["net_cash_flow"]
         for _, row in invalid.iterrows():
-            self._add_failure("DQ-07", "WARNING", "cashflow", row["company_id"], row["year"], "net_cash_flow", f"Cash-flow components differ from net_cash_flow by {row['difference']}; tolerance is ±{tolerance:g} crore.")
+            self._add_failure(
+                "DQ-07",
+                "WARNING",
+                "cashflow",
+                row["company_id"],
+                row["year"],
+                "net_cash_flow",
+                f"Cash-flow components differ from net_cash_flow by {row['difference']}; tolerance is ±{tolerance:g} crore.",
+            )
 
     def check_dq11_eps_sign_consistency(self) -> None:
         """DQ-11 WARNING: net profit and EPS must have the same mathematical sign."""
         table = self.tables["profitandloss"]
-        self._require_columns("profitandloss", {"company_id", "year", "net_profit", "eps"})
+        self._require_columns(
+            "profitandloss", {"company_id", "year", "net_profit", "eps"}
+        )
         eligible = table[table["net_profit"].notna() & table["eps"].notna()]
         invalid = eligible[np.sign(eligible["net_profit"]) != np.sign(eligible["eps"])]
         for _, row in invalid.iterrows():
-            self._add_failure("DQ-11", "WARNING", "profitandloss", row["company_id"], row["year"], "net_profit,eps", f"net_profit ({row['net_profit']}) and eps ({row['eps']}) have different signs.")
+            self._add_failure(
+                "DQ-11",
+                "WARNING",
+                "profitandloss",
+                row["company_id"],
+                row["year"],
+                "net_profit,eps",
+                f"net_profit ({row['net_profit']}) and eps ({row['eps']}) have different signs.",
+            )
 
     def _assert_required_tables(self) -> None:
         missing = set(SOURCE_FILENAMES) - set(self.tables)
@@ -185,17 +282,40 @@ class DataValidator:
     def _require_columns(self, table_name: str, required: set[str]) -> None:
         missing = required - set(self.tables[table_name].columns)
         if missing:
-            raise KeyError(f"{table_name} is missing required columns: {', '.join(sorted(missing))}")
+            raise KeyError(
+                f"{table_name} is missing required columns: {', '.join(sorted(missing))}"
+            )
 
-    def _add_failure(self, rule_id: str, severity: str, table_name: str, company_id: object, year: object, column_name: str, message: str) -> None:
-        self._failures.append({"rule_id": rule_id, "severity": severity, "table_name": table_name, "company_id": company_id, "year": year, "column_name": column_name, "message": message})
+    def _add_failure(
+        self,
+        rule_id: str,
+        severity: str,
+        table_name: str,
+        company_id: object,
+        year: object,
+        column_name: str,
+        message: str,
+    ) -> None:
+        self._failures.append(
+            {
+                "rule_id": rule_id,
+                "severity": severity,
+                "table_name": table_name,
+                "company_id": company_id,
+                "year": year,
+                "column_name": column_name,
+                "message": message,
+            }
+        )
 
 
 def main() -> None:
     """Run validation for the default standardized data directory."""
     validator = DataValidator()
     failures = validator.write_failures()
-    print(f"Validation complete: {len(failures)} failure(s) written to {validator.output_path}")
+    print(
+        f"Validation complete: {len(failures)} failure(s) written to {validator.output_path}"
+    )
     for rule_id, reason in validator.skipped_rules.items():
         print(f"{rule_id}: {reason}")
 

@@ -7,7 +7,6 @@ import re
 from datetime import datetime
 from typing import Any
 
-
 _MISSING_TEXT = {"", "-", "nan", "none", "null", "na", "n/a"}
 _YEAR_PATTERN = re.compile(r"(?<!\d)(\d{4})(?!\d)")
 _YEAR_RANGE_PATTERN = re.compile(r"^\s*(\d{4})\s*[-/]\s*(\d{2}|\d{4})\s*$")

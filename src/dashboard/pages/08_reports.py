@@ -12,24 +12,38 @@ if companies_df.empty:
     st.stop()
 
 # Company Dropdown
-company_options = companies_df['nse'] + " - " + companies_df['company_name']
+company_options = companies_df["nse"] + " - " + companies_df["company_name"]
 selected_company = st.selectbox("Search Company for Reports", company_options.tolist())
 ticker = selected_company.split(" - ")[0]
-company_id = companies_df[companies_df['nse'] == ticker]['company_id'].iloc[0]
+company_id = companies_df[companies_df["nse"] == ticker]["company_id"].iloc[0]
 
 # Fetch Documents
-docs_df = db._run_query("SELECT * FROM documents WHERE company_id = ? AND document_type LIKE '%Annual%'", (int(company_id),))
+docs_df = db._run_query(
+    "SELECT * FROM documents WHERE company_id = ? AND document_type LIKE '%Annual%'",
+    (int(company_id),),
+)
 
 # Mock data if empty for demonstration
 if docs_df.empty:
     st.info("No documents found in DB. Showing mocked data for demonstration.")
-    docs_df = pd.DataFrame({
-        'title': [f"{ticker} Annual Report 2023", f"{ticker} Annual Report 2022", f"{ticker} Annual Report 2021"],
-        'document_date': ['2023-03-31', '2022-03-31', '2021-03-31'],
-        'source_url': ['https://www.bseindia.com/mock/report2023.pdf', 'https://www.bseindia.com/mock/report2022.pdf', ''] # Last one is empty
-    })
+    docs_df = pd.DataFrame(
+        {
+            "title": [
+                f"{ticker} Annual Report 2023",
+                f"{ticker} Annual Report 2022",
+                f"{ticker} Annual Report 2021",
+            ],
+            "document_date": ["2023-03-31", "2022-03-31", "2021-03-31"],
+            "source_url": [
+                "https://www.bseindia.com/mock/report2023.pdf",
+                "https://www.bseindia.com/mock/report2022.pdf",
+                "",
+            ],  # Last one is empty
+        }
+    )
 
 st.subheader(f"Available Reports for {ticker}")
+
 
 @st.cache_data(ttl=3600)
 def check_url(url):
@@ -42,16 +56,17 @@ def check_url(url):
     except:
         return False
 
+
 for idx, row in docs_df.iterrows():
     col_text, col_badge = st.columns([3, 1])
     with col_text:
         st.write(f"**{row['title']}** ({row['document_date']})")
-        if row['source_url']:
+        if row["source_url"]:
             st.markdown(f"[Download PDF]({row['source_url']})")
-    
+
     with col_badge:
         # Check URL validity
-        url = row.get('source_url', '')
+        url = row.get("source_url", "")
         if url:
             # For demonstration, we assume valid if it starts with http, since live checking can block the app
             # and fake bse urls will always fail.
@@ -68,5 +83,5 @@ for idx, row in docs_df.iterrows():
                     st.markdown("❌ **Report Unavailable**")
         else:
             st.markdown("❌ **Link Missing**")
-            
+
     st.divider()

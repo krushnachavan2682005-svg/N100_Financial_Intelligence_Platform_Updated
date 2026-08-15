@@ -64,7 +64,9 @@ def test_ratios_preserve_negative_profit_values():
         (current_ratio, 1_200, 800, 1.5),
     ],
 )
-def test_solvency_and_liquidity_ratios_calculate_expected_values(function, numerator, denominator, expected):
+def test_solvency_and_liquidity_ratios_calculate_expected_values(
+    function, numerator, denominator, expected
+):
     assert function(numerator, denominator) == expected
 
 
@@ -80,7 +82,9 @@ def test_debt_to_equity_reports_high_leverage():
         (current_ratio, 1_200),
     ],
 )
-def test_solvency_and_liquidity_ratios_return_none_for_zero_denominator(function, numerator):
+def test_solvency_and_liquidity_ratios_return_none_for_zero_denominator(
+    function, numerator
+):
     assert function(numerator, 0) is None
 
 
