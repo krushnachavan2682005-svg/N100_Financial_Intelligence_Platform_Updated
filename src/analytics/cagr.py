@@ -90,7 +90,9 @@ def calculate_cagr_with_flag(
     return calculate_cagr(start_val, end_val, num_years), None
 
 
-def calculate_cagr_from_series(values: Sequence[Any], num_years: Any | None = None) -> float | None:
+def calculate_cagr_from_series(
+    values: Sequence[Any], num_years: Any | None = None
+) -> float | None:
     """Calculate CAGR from ordered annual values using the first and last values.
 
     When ``num_years`` is omitted, the function treats adjacent annual values as
