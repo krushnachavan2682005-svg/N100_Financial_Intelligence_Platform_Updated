@@ -7,6 +7,9 @@ data/processed/*
 output/*
 !output/.gitkeep
 
+reports/*
+reports/radar_charts/*
+
 *.db
 .venv/
 .env
