@@ -1,17 +1,66 @@
+# Data Folders (Ignore contents, keep structure)
 data/raw/*
 !data/raw/.gitkeep
-
 data/processed/*
 !data/processed/.gitkeep
 
-output/*
-!output/.gitkeep
-
-reports/*
-reports/radar_charts/*
-
+# Database Files
 *.db
-.venv/
+*.sqlite
+*.sqlite3
+nifty100.db
+
+# Environments & Secrets
 .env
+.env.*
+!.example.env
+
+# Tests & Coverage
+pytest_report.html
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python Build & Cache
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# OS & IDE Specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+tree.txt
