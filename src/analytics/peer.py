@@ -193,7 +193,7 @@ def calculate_peer_percentiles(connection: sqlite3.Connection) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    db_path = "nifty100.db"
+    db_path = "db/nifty100.db"
     conn = sqlite3.connect(db_path)
     try:
         calculate_peer_percentiles(conn)

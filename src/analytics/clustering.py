@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-def load_data(db_path="nifty100.db"):
+def load_data(db_path="db/nifty100.db"):
     """
     Query latest financial ratios and metadata.
     """

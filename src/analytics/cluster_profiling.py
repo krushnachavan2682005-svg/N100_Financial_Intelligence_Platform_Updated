@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def load_kpis(db_path="nifty100.db"):
+def load_kpis(db_path="db/nifty100.db"):
     conn = sqlite3.connect(db_path)
 
     query = """
