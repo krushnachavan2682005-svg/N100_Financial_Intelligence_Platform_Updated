@@ -5,7 +5,7 @@ import os
 
 DB_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-    "nifty100.db",
+    "db", "nifty100.db",
 )
 
 

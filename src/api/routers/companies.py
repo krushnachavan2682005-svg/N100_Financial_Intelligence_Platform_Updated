@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 router = APIRouter()
-DB_PATH = "nifty100.db"
+DB_PATH = "db/nifty100.db"
 
 
 def get_db_connection():

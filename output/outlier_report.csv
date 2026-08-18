@@ -1,0 +1,3 @@
+company_id,company_name,sector,metric,value,sector_mean,sector_std,z_score
+14,Comp_14,Health,net_profit_margin_pct,24.076745415485355,8.780930536498746,4.8701716690889585,3.140713699286894
+0,Comp_0,Tech,return_on_equity_pct,1000.0,45.19095201384699,177.52100698829,5.378569354606782

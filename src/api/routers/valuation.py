@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 router = APIRouter()
-DB_PATH = "nifty100.db"
+DB_PATH = "db/nifty100.db"
 
 
 @router.get("/valuation/{ticker}")

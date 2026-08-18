@@ -205,7 +205,7 @@ def generate_peer_comparison_excel(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    db_path = "nifty100.db"
+    db_path = "db/nifty100.db"
     conn = sqlite3.connect(db_path)
     try:
         generate_peer_comparison_excel(conn)

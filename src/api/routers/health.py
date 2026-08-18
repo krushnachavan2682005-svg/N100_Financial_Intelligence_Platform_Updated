@@ -22,7 +22,7 @@ def health_check():
 
     db_row_counts = {}
     try:
-        conn = sqlite3.connect("nifty100.db", check_same_thread=False)
+        conn = sqlite3.connect("db/nifty100.db", check_same_thread=False)
         cursor = conn.cursor()
 
         for table in TABLES_TO_CHECK:

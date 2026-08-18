@@ -369,7 +369,7 @@ def _ensure_ratio_columns(connection: sqlite3.Connection) -> None:
             )
 
 
-def load_financial_ratios(db_path: str | Path = "nifty100.db") -> int:
+def load_financial_ratios(db_path: str | Path = "db/nifty100.db") -> int:
     """Calculate and upsert annual ratios into ``financial_ratios`` in one transaction."""
     # Ensure audit log directory and file always exist
     RATIO_EDGE_CASES_LOG.parent.mkdir(parents=True, exist_ok=True)

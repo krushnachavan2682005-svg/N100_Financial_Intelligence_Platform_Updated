@@ -8,7 +8,7 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def setup_db():
-    conn = sqlite3.connect("nifty100.db")
+    conn = sqlite3.connect("db/nifty100.db")
     cursor = conn.cursor()
     try:
         cursor.execute(

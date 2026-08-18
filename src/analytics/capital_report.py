@@ -111,6 +111,6 @@ def generate_capital_report(db_path, output_dir):
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    db_file = os.path.join(base_dir, "nifty100.db")
+    db_file = os.path.join(base_dir, "db/nifty100.db")
     out_dir = os.path.join(base_dir, "output")
     generate_capital_report(db_file, out_dir)
